@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SocialFinder — Social Profile Lookup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fragment+Mono&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+  :root{
+    --bg:#F5F4F0; --card:#FFFFFF; --ink:#1B1C1F; --muted:#6B6E73; --accent:#3478F6; --line:#E3E1DA; --green:#1DAA61;
+  }
+  [data-theme="dark"]{ --bg:#0D0E12; --card:#161821; --ink:#EDEEF2; --muted:#8B8E97; --line:#262834; }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;transition:background .3s,color .3s;}
+  .mono{font-family:'Fragment Mono',monospace;}
+  .wrap{max-width:640px;margin:0 auto;padding:50px 24px 80px;}
+
+  .top-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:32px;}
+  .brand{font-weight:700;font-size:1.2rem;display:flex;align-items:center;gap:8px;}
+  .brand .mono{color:var(--accent);font-size:.95rem;}
+  .theme-toggle{width:44px;height:44px;border-radius:10px;background:var(--card);border:1px solid var(--line);cursor:pointer;font-size:1.1rem;}
+
+  .platform-row{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
+  .platform-chip{display:flex;align-items:center;gap:7px;padding:9px 16px;border-radius:30px;border:1px solid var(--line);background:var(--card);font-size:.82rem;cursor:pointer;color:var(--muted);}
+  .platform-chip.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .platform-chip i{font-size:.95rem;}
+
+  .search-box{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:6px 6px 6px 18px;box-shadow:0 6px 20px rgba(0,0,0,.04);margin-bottom:10px;}
+  .search-box input{flex:1;border:none;outline:none;background:none;color:var(--ink);font-family:'Fragment Mono',monospace;font-size:.92rem;padding:14px 0;}
+  .search-box input::placeholder{color:var(--muted);}
+  .search-btn{background:var(--accent);color:#fff;border:none;padding:12px 20px;border-radius:10px;font-weight:600;font-size:.85rem;cursor:pointer;font-family:'Space Grotesk';}
+  .hint{color:var(--muted);font-size:.78rem;margin-bottom:24px;display:block;}
+
+  .error-box{display:none;background:#FDEAEA;color:#C03A3A;border-radius:12px;padding:16px 20px;font-size:.88rem;margin-bottom:20px;}
+  [data-theme="dark"] .error-box{background:#2A1818;color:#F08A8A;}
+  .spinner{display:none;text-align:center;padding:50px 0;color:var(--muted);font-family:'Fragment Mono',monospace;font-size:.85rem;}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px;box-shadow:0 10px 30px rgba(0,0,0,.05);display:none;margin-bottom:16px;}
+  .card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+  .source-tag{font-size:.74rem;padding:4px 10px;border-radius:8px;font-weight:600;display:flex;align-items:center;gap:5px;}
+  .src-github{background:rgba(36,41,47,.08);color:#24292F;} [data-theme="dark"] .src-github{color:#fff;background:rgba(255,255,255,.08);}
+  .src-reddit{background:rgba(255,69,0,.1);color:#FF4500;}
+  .live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;}
+
+  .profile-top{display:flex;gap:18px;align-items:flex-start;margin-bottom:16px;}
+  .avatar{width:74px;height:74px;border-radius:50%;border:1px solid var(--line);object-fit:cover;}
+  .name{font-size:1.15rem;font-weight:700;}
+  .username{color:var(--accent);font-family:'Fragment Mono',monospace;font-size:.85rem;margin-top:2px;}
+  .joined{color:var(--muted);font-size:.76rem;margin-top:6px;}
+  .bio{color:var(--muted);font-size:.88rem;line-height:1.6;margin-bottom:18px;}
+
+  .stats-bar{display:flex;justify-content:space-between;background:var(--bg);border-radius:12px;padding:14px 20px;margin-bottom:14px;}
+  [data-theme="dark"] .stats-bar{background:#1B1D27;}
+  .stat-label{color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;}
+  .stat-val{font-weight:700;font-size:1.1rem;}
+  .profile-link-btn{display:inline-flex;align-items:center;gap:8px;color:var(--accent);font-size:.84rem;font-weight:600;text-decoration:none;}
+
+  .unavailable-row{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 20px;margin-bottom:10px;}
+  .unavailable-left{display:flex;align-items:center;gap:12px;}
+  .unavailable-left i{font-size:1.3rem;color:var(--muted);width:28px;text-align:center;}
+  .unavailable-name{font-weight:600;font-size:.9rem;}
+  .unavailable-sub{color:var(--muted);font-size:.76rem;}
+  .visit-btn{background:var(--bg);border:1px solid var(--line);color:var(--ink);padding:8px 16px;border-radius:8px;font-size:.78rem;font-weight:600;cursor:pointer;text-decoration:none;}
+  [data-theme="dark"] .visit-btn{background:#1B1D27;}
+
+  .empty-state{text-align:center;color:var(--muted);padding:50px 20px;font-size:.92rem;}
+  .empty-state .mono{display:block;font-size:.8rem;margin-top:8px;}
+  .note-box{background:rgba(52,120,246,.07);border:1px solid rgba(52,120,246,.2);border-radius:12px;padding:14px 18px;font-size:.8rem;color:var(--muted);margin-bottom:24px;line-height:1.6;}
+  .note-box b{color:var(--accent);}
+
+  @media(max-width:480px){ .profile-top{flex-direction:column;align-items:center;text-align:center;} }
+</style>
+</head>
+<body data-theme="light">
+<div class="wrap">
+  <div class="top-row">
+    <div class="brand">social<span class="mono">finder</span></div>
+    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙</button>
+  </div>
+
+  <div class="note-box">
+    <b>How this works:</b> GitHub & Reddit have open public APIs, so this tool fetches <b>real, live profile data</b> from them. Instagram, X/Twitter & Facebook don't allow this without a paid API key — for those, you'll get a direct link to visit the profile instead.
+  </div>
+
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="username" class="mono" onkeydown="if(event.key==='Enter') search()">
+    <button class="search-btn" onclick="search()">Search</button>
+  </div>
+  <span class="hint">Searches across GitHub, Reddit, Instagram, X & Facebook at once.</span>
+
+  <div class="error-box" id="errorBox"></div>
+  <div class="spinner" id="spinner">Searching live profiles...</div>
+
+  <div id="resultsArea"></div>
+
+  <div class="empty-state" id="emptyState">
+    Enter a username above to look it up across platforms.
+    <span class="mono">Try: "torvalds" or "mabdulrehmandev"</span>
+  </div>
+</div>
+
+<script>
+function toggleTheme(){
+  const body = document.body;
+  const isDark = body.getAttribute('data-theme') === 'dark';
+  body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('themeToggle').textContent = isDark ? '🌙' : '☀️';
+}
+
+function githubCard(d){
+  return `
+  <div class="card" style="display:block;">
+    <div class="card-top">
+      <span class="source-tag src-github"><i class="fa-brands fa-github"></i> GitHub</span>
+      <span class="source-tag" style="background:rgba(29,170,97,.1);color:var(--green);"><span class="live-dot"></span> Live data</span>
+    </div>
+    <div class="profile-top">
+      <img class="avatar" src="${d.avatar_url}" alt="avatar">
+      <div>
+        <div class="name">${d.name || d.login}</div>
+        <div class="username">@${d.login}</div>
+        <div class="joined">Joined ${new Date(d.created_at).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}</div>
+      </div>
+    </div>
+    <div class="bio">${d.bio || 'This user has no bio.'}</div>
+    <div class="stats-bar">
+      <div><div class="stat-label">Repos</div><div class="stat-val">${d.public_repos}</div></div>
+      <div><div class="stat-label">Followers</div><div class="stat-val">${d.followers}</div></div>
+      <div><div class="stat-label">Following</div><div class="stat-val">${d.following}</div></div>
+    </div>
+    <a class="profile-link-btn" href="${d.html_url}" target="_blank">View full profile <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+  </div>`;
+}
+
+function redditCard(d){
+  const created = new Date(d.created_utc*1000);
+  return `
+  <div class="card" style="display:block;">
+    <div class="card-top">
+      <span class="source-tag src-reddit"><i class="fa-brands fa-reddit-alien"></i> Reddit</span>
+      <span class="source-tag" style="background:rgba(29,170,97,.1);color:var(--green);"><span class="live-dot"></span> Live data</span>
+    </div>
+    <div class="profile-top">
+      <img class="avatar" src="${(d.icon_img||'').split('?')[0] || 'https://www.redditstatic.com/avatars/defaults/v2/avatar_default_2.png'}" alt="avatar">
+      <div>
+        <div class="name">${d.subreddit && d.subreddit.title ? d.subreddit.title : d.name}</div>
+        <div class="username">u/${d.name}</div>
+        <div class="joined">Joined ${created.toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}</div>
+      </div>
+    </div>
+    <div class="bio">${(d.subreddit && d.subreddit.public_description) || 'This user has no public description.'}</div>
+    <div class="stats-bar">
+      <div><div class="stat-label">Karma</div><div class="stat-val">${(d.total_karma||0).toLocaleString()}</div></div>
+      <div><div class="stat-label">Post Karma</div><div class="stat-val">${(d.link_karma||0).toLocaleString()}</div></div>
+      <div><div class="stat-label">Comment Karma</div><div class="stat-val">${(d.comment_karma||0).toLocaleString()}</div></div>
+    </div>
+    <a class="profile-link-btn" href="https://reddit.com/user/${d.name}" target="_blank">View full profile <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+  </div>`;
+}
+
+function unavailableRow(platform, icon, color, url){
+  return `
+  <div class="unavailable-row">
+    <div class="unavailable-left">
+      <i class="${icon}" style="color:${color}"></i>
+      <div>
+        <div class="unavailable-name">${platform}</div>
+        <div class="unavailable-sub">Requires login / API key — live lookup not possible</div>
+      </div>
+    </div>
+    <a class="visit-btn" href="${url}" target="_blank">Visit Profile ↗</a>
+  </div>`;
+}
+
+async function search(){
+  const username = document.getElementById('searchInput').value.trim();
+  if(!username) return;
+
+  document.getElementById('errorBox').style.display = 'none';
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('resultsArea').innerHTML = '';
+  document.getElementById('spinner').style.display = 'block';
+
+  let html = '';
+  let foundAny = false;
+
+  try {
+    const ghRes = await fetch(`https://api.github.com/users/${username}`);
+    if(ghRes.ok){ html += githubCard(await ghRes.json()); foundAny = true; }
+  } catch(e){ /* ignore, network or CORS issue */ }
+
+  try {
+    const rdRes = await fetch(`https://www.reddit.com/user/${username}/about.json`);
+    if(rdRes.ok){
+      const rdJson = await rdRes.json();
+      if(rdJson && rdJson.data && rdJson.data.name){ html += redditCard(rdJson.data); foundAny = true; }
+    }
+  } catch(e){ /* Reddit may block CORS from some browsers/origins */ }
+
+  html += unavailableRow('Instagram', 'fa-brands fa-instagram', '#E4405F', `https://instagram.com/${username}`);
+  html += unavailableRow('X (Twitter)', 'fa-brands fa-x-twitter', '#000', `https://x.com/${username}`);
+  html += unavailableRow('Facebook', 'fa-brands fa-facebook', '#1877F2', `https://facebook.com/${username}`);
+
+  document.getElementById('spinner').style.display = 'none';
+  document.getElementById('resultsArea').innerHTML = html;
+
+  if(!foundAny){
+    document.getElementById('errorBox').textContent = `No live data found on GitHub or Reddit for "${username}" — they may not exist there, or Reddit blocked the request from this browser.`;
+    document.getElementById('errorBox').style.display = 'block';
+  }
+}
+</script>
+</body>
+</html>
